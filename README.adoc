@@ -289,6 +289,8 @@ It describes how these operations alter the system:
 * SAFE - will not alter the state of the back end
 * IDEMPOTENT - repeat the same operation, get the same output. Implicitly unsafe because it does alter the back end.
 
+This is just a preliminary glimpse of the metadata. Look for more details at http://alps.io.
+
 If we peek at the domain object:
 
 [source,java]
