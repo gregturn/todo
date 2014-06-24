@@ -1,0 +1,316 @@
+== What is this?
+
+This project is a small demonstration of the metadata served up by Spring Data REST. The app is basically a list of TODOs that can be created, updated, altered, and deleted
+through REST.
+
+== How to run
+
+. Check it out.
+. Build with `mvn clean package`
+. Run it with `mvn spring-boot:run`
+
+== How to check it out
+
+Assuming you have started it up, try this:
+
+----
+$ curl localhost:8080
+{
+  "_links" : {
+    "todos" : {
+      "href" : "http://localhost:8080/todoes"
+    },
+    "profile" : {
+      "href" : "http://localhost:8080/alps"
+    }
+  }
+}
+----
+
+By visiting the root node, `/`, you can see there is a link to the list of TODOs with the **rel** of **todos**.
+
+NOTE: What is a **rel**? It stands for "relationship". In hypermedia, it's the logical name given to a URI, meant to define its relationship. It's kind of analogous to the domain name 
+associated with an IP address.By focusing on rels, you don't have to remember URIs, which are more complex and subject to change.
+
+There is also a **profile** link to `/alps` which we'll see quickly.
+
+But first, let's look at what is behind **todos**.
+
+----
+$ curl localhost:8080/todoes
+{ }
+----
+
+No TODOs apparently! So what if we want to create one? We have to put together a POST combined with some data elements. But what ARE the data elements? We could cheat by peeking at
+the code in this project. But if this was deployed somewhere on the internet, we might not have access to that. Instead, we can tap the app's ALPS metadata and figure it out directly.
+
+Let's do some exploration of the ALPS link.
+
+----
+$ curl http://localhost:8080/alps
+{
+  "version" : "1.0",
+  "descriptors" : [ {
+    "href" : "http://localhost:8080/alps//todoes",
+    "name" : "todos"
+  } ]
+}
+$ curl http://localhost:8080/alps//todoes
+{
+  "version" : "1.0",
+  "descriptors" : [ {
+    "id" : "todo-representation",
+    "descriptors" : [ {
+      "name" : "description",
+      "doc" : {
+        "value" : "Details about the TODO item",
+        "format" : "TEXT"
+      },
+      "type" : "SEMANTIC"
+    }, {
+      "name" : "title",
+      "doc" : {
+        "value" : "Title for the TODO item",
+        "format" : "TEXT"
+      },
+      "type" : "SEMANTIC"
+    }, {
+      "name" : "id",
+      "type" : "SEMANTIC"
+    }, {
+      "name" : "completed",
+      "doc" : {
+        "value" : "Is it completed?",
+        "format" : "TEXT"
+      },
+      "type" : "SEMANTIC"
+    } ]
+  }, {
+    "id" : "create-todos",
+    "name" : "todos",
+    "type" : "UNSAFE",
+    "rt" : "#todo-representation"
+  }, {
+    "id" : "get-todos",
+    "name" : "todos",
+    "type" : "SAFE",
+    "rt" : "#todo-representation"
+  }, {
+    "id" : "patch-todo",
+    "name" : "todo",
+    "type" : "UNSAFE",
+    "rt" : "#todo-representation"
+  }, {
+    "id" : "delete-todo",
+    "name" : "todo",
+    "type" : "IDEMPOTENT",
+    "rt" : "#todo-representation"
+  }, {
+    "id" : "update-todo",
+    "name" : "todo",
+    "type" : "IDEMPOTENT",
+    "rt" : "#todo-representation"
+  }, {
+    "id" : "get-todo",
+    "name" : "todo",
+    "type" : "SAFE",
+    "rt" : "#todo-representation"
+  } ]
+}
+----
+
+What the heck is all this? If we read this document bit-by-bit, it explains itself.
+
+----
+"id" : "todo-representation"
+----
+
+It identifies itself as a **todo-representation**. If we look at the descriptors array (inside the outer descriptors entry):
+
+----
+"descriptors" : [ {
+  "name" : "description",
+  "doc" : {
+    "value" : "Details about the TODO item",
+    "format" : "TEXT"
+  },
+  "type" : "SEMANTIC"
+}, {
+  "name" : "title",
+  "doc" : {
+    "value" : "Title for the TODO item",
+    "format" : "TEXT"
+  },
+  "type" : "SEMANTIC"
+}, {
+  "name" : "id",
+  "type" : "SEMANTIC"
+}, {
+  "name" : "completed",
+  "doc" : {
+    "value" : "Is it completed?",
+    "format" : "TEXT"
+  },
+  "type" : "SEMANTIC"
+} ]
+----
+
+We see:
+
+[options="header"]
+|====
+| Name | Description | Value
+| description | Details about the TODO item | TEXT
+| title | Title for the TODO item | TEXT
+| id | |
+| completed | Is it completed? | TEXT
+|====
+{empty}
+
+We can see the names and a description of what they do. Each one is marked as TEXT, meaning we can feed it a text value. But Spring Data REST will use Spring MVC's
+message converters to convert it to the right value when populating a back end POJO.
+
+NOTE: **id** doesn't have any details and we don't need them, because in general, the back end will handle creating a new id.
+
+So armed with this information, we can craft a POST.
+
+----
+$ curl -X POST -H "Content-Type:application/json" -d '{"title": "Write a README for todo project", "description": "Write a detailed doc introducing readers to Spring Data REST + ALPS", "completed": "false"}' -i localhost:8080/todoes
+HTTP/1.1 201 Created
+Server: Apache-Coyote/1.1
+X-Application-Context: application
+Location: http://localhost:8080/todoes/1
+Content-Length: 0
+Date: Tue, 24 Jun 2014 21:20:57 GMT
+----
+
+It worked! (See the 200 status code?) 
+
+First, let's look at all the inputs used to create this entity:
+
+[options="header"]
+|====
+| Argument | Details
+| -X POST | This is a POST. curl defaults to GET
+| -H "Content-Type:application/json" | the payload being sent is JSON
+| -d \'{ json content....}' | the data, i.e. payload, being sent
+| -i | print out all headers sent back
+| localhost:8080/todoes | the URI where we can interact with the collection of TODOs
+|====
+{empty}
+
+Now let's examine the outputs. It replied by giving us a **Location** header entry of http://localhost:8080/todoes/1, the location of the newly created resource. We can check it
+out:
+
+----
+$ curl localhost:8080/todoes/1
+{
+  "title" : "Write a README for todo project",
+  "description" : "Write a detailed doc introducing readers to Spring Data REST + ALPS",
+  "completed" : false,
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/todoes/1"
+    }
+  }
+}
+----
+
+We can definitely interact with it.
+
+----
+$ curl -X PATCH -H "Content-Type:application/json" -d '{"completed": "true"}' -i localhost:8080/todoes/1
+HTTP/1.1 204 No Content
+Server: Apache-Coyote/1.1
+X-Application-Context: application
+Date: Tue, 24 Jun 2014 21:23:43 GMT
+
+$ curl localhost:8080/todoes/1
+{
+  "title" : "Write a README for todo project",
+  "description" : "Write a detailed doc introducing readers to Spring Data REST + ALPS",
+  "completed" : true,
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/todoes/1"
+    }
+  }
+}
+----
+
+There are more operations. In fact, it already told us what operations were available.
+
+----
+{
+  "id" : "create-todos",
+  "name" : "todos",
+  "type" : "UNSAFE",
+  "rt" : "#todo-representation"
+}, {
+  "id" : "get-todos",
+  "name" : "todos",
+  "type" : "SAFE",
+  "rt" : "#todo-representation"
+}, {
+  "id" : "patch-todo",
+  "name" : "todo",
+  "type" : "UNSAFE",
+  "rt" : "#todo-representation"
+}, {
+  "id" : "delete-todo",
+  "name" : "todo",
+  "type" : "IDEMPOTENT",
+  "rt" : "#todo-representation"
+}, {
+  "id" : "update-todo",
+  "name" : "todo",
+  "type" : "IDEMPOTENT",
+  "rt" : "#todo-representation"
+}, {
+  "id" : "get-todo",
+  "name" : "todo",
+  "type" : "SAFE",
+  "rt" : "#todo-representation"
+}
+----
+
+We have support for:
+
+* create (HTTP POST)
+* get all (HTTP GET)
+* patch one (HTTP PATCH)
+* delete one (HTTP DELETE)
+* update one (HTTP PUT)
+* get one (HTTP GET)
+
+It describes how these operations alter the system:
+
+* UNSAFE - can cause changes to the back end
+* SAFE - will not alter the state of the back end
+* IDEMPOTENT - repeat the same operation, get the same output. Implicitly unsafe because it does alter the back end.
+
+If we peek at the domain object:
+
+[source,java]
+----
+@Entity
+public class Todo {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long id;
+
+    @Description("Title for the TODO item")
+    private String title;
+
+    @Description("Details about the TODO item")
+    private String description;
+
+    @Description("Is it completed?")
+    private boolean completed;
+...
+----
+
+We can see the back end. 
+
+Given this information, we can build a front end however we want. 
