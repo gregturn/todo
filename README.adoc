@@ -3,13 +3,13 @@
 This project is a small demonstration of the metadata served up by Spring Data REST. The app is basically a list of TODOs that can be created, updated, altered, and deleted
 through REST.
 
-== How to run
+== How to run the app
 
-. Check it out.
+. Clone a copy of this repo.
 . Build with `mvn clean package`
 . Run it with `mvn spring-boot:run`
 
-== How to check it out
+== How to check things out
 
 Assuming you have started it up, try this:
 
