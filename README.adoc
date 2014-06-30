@@ -159,11 +159,11 @@ We see:
 
 [options="header"]
 |====
-| Name | Description | Value
-| description | Details about the TODO item | TEXT
-| title | Title for the TODO item | TEXT
+| Name | Description 
+| description | Details about the TODO item
+| title | Title for the TODO item
 | id | |
-| completed | Is it completed? | TEXT
+| completed | Is it completed?
 |====
 {empty}
 
