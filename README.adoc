@@ -18,7 +18,7 @@ $ curl localhost:8080
 {
   "_links" : {
     "todos" : {
-      "href" : "http://localhost:8080/todoes"
+      "href" : "http://localhost:8080/todos"
     },
     "profile" : {
       "href" : "http://localhost:8080/alps"
@@ -37,7 +37,7 @@ There is also a **profile** link to `/alps` which we'll see quickly.
 But first, let's look at what is behind **todos**.
 
 ----
-$ curl localhost:8080/todoes
+$ curl localhost:8080/todos
 { }
 ----
 
@@ -51,11 +51,11 @@ $ curl http://localhost:8080/alps
 {
   "version" : "1.0",
   "descriptors" : [ {
-    "href" : "http://localhost:8080/alps//todoes",
+    "href" : "http://localhost:8080/alps//todos",
     "name" : "todos"
   } ]
 }
-$ curl http://localhost:8080/alps//todoes
+$ curl http://localhost:8080/alps//todos
 {
   "version" : "1.0",
   "descriptors" : [ {
@@ -175,11 +175,11 @@ NOTE: **id** doesn't have any details and we don't need them, because in general
 So armed with this information, we can craft a POST.
 
 ----
-$ curl -X POST -H "Content-Type:application/json" -d '{"title": "Write a README for todo project", "description": "Write a detailed doc introducing readers to Spring Data REST + ALPS", "completed": "false"}' -i localhost:8080/todoes
+$ curl -X POST -H "Content-Type:application/json" -d '{"title": "Write a README for todo project", "description": "Write a detailed doc introducing readers to Spring Data REST + ALPS", "completed": "false"}' -i localhost:8080/todos
 HTTP/1.1 201 Created
 Server: Apache-Coyote/1.1
 X-Application-Context: application
-Location: http://localhost:8080/todoes/1
+Location: http://localhost:8080/todos/1
 Content-Length: 0
 Date: Tue, 24 Jun 2014 21:20:57 GMT
 ----
@@ -195,22 +195,22 @@ First, let's look at all the inputs used to create this entity:
 | -H "Content-Type:application/json" | the payload being sent is JSON
 | -d \'{ json content....}' | the data, i.e. payload, being sent
 | -i | print out all headers sent back
-| localhost:8080/todoes | the URI where we can interact with the collection of TODOs
+| localhost:8080/todos | the URI where we can interact with the collection of TODOs
 |====
 {empty}
 
-Now let's examine the outputs. It replied by giving us a **Location** header entry of http://localhost:8080/todoes/1, the location of the newly created resource. We can check it
+Now let's examine the outputs. It replied by giving us a **Location** header entry of http://localhost:8080/todos/1, the location of the newly created resource. We can check it
 out:
 
 ----
-$ curl localhost:8080/todoes/1
+$ curl localhost:8080/todos/1
 {
   "title" : "Write a README for todo project",
   "description" : "Write a detailed doc introducing readers to Spring Data REST + ALPS",
   "completed" : false,
   "_links" : {
     "self" : {
-      "href" : "http://localhost:8080/todoes/1"
+      "href" : "http://localhost:8080/todos/1"
     }
   }
 }
@@ -219,20 +219,20 @@ $ curl localhost:8080/todoes/1
 We can definitely interact with it.
 
 ----
-$ curl -X PATCH -H "Content-Type:application/json" -d '{"completed": "true"}' -i localhost:8080/todoes/1
+$ curl -X PATCH -H "Content-Type:application/json" -d '{"completed": "true"}' -i localhost:8080/todos/1
 HTTP/1.1 204 No Content
 Server: Apache-Coyote/1.1
 X-Application-Context: application
 Date: Tue, 24 Jun 2014 21:23:43 GMT
 
-$ curl localhost:8080/todoes/1
+$ curl localhost:8080/todos/1
 {
   "title" : "Write a README for todo project",
   "description" : "Write a detailed doc introducing readers to Spring Data REST + ALPS",
   "completed" : true,
   "_links" : {
     "self" : {
-      "href" : "http://localhost:8080/todoes/1"
+      "href" : "http://localhost:8080/todos/1"
     }
   }
 }
